@@ -1,10 +1,10 @@
-class Circles {
+class Squares {
 
   PVector location = new PVector(0, 0);
   float size = 0;
   float speed = width/200;
 
-  Circles(float x, float y, float s) {
+  Squares(float x, float y, float s) {
     location.x = x;
     location.y = y;
     speed = s;

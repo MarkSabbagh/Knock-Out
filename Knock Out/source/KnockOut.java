@@ -24,6 +24,7 @@ Nexus nexus;
 
 public void setup() {
   
+  frameRate(60);
   nexus = new Nexus();
 }
 
@@ -103,14 +104,17 @@ class CircleParticles {
   float lifeSpan = 255;
   float rotation;
   int c;
+  boolean sqaure = true;
 
-  CircleParticles(float x, float y, float vx, float vy, float r, int c) {
+  CircleParticles(float x, float y, float vx, float vy, float r, int c, int shape) {
     location.x = x;
     location.y = y;
     velocity.x = vx;
     velocity.y = vy;
     rotation = r;
     this.c = c;
+    if (shape == 1)
+      sqaure = false;
   }
 
   public void show() {
@@ -122,7 +126,15 @@ class CircleParticles {
     //ellipse(location.x, location.y, size/4, size/4);
     translate(location.x, location.y);
     rotate(rotation);
-    rect(0, 0, size/3, size/3);
+
+    if (sqaure) {
+      rect(0, 0, size/3, size/3);
+    } else {
+      noStroke();
+      ellipse(0, 0, size/3, size/3);
+
+    }
+
     popMatrix();
   }
 
@@ -131,13 +143,13 @@ class CircleParticles {
     lifeSpan-=6;
   }
 }
-class Circles {
+class Squares {
 
   PVector location = new PVector(0, 0);
   float size = 0;
   float speed = width/200;
 
-  Circles(float x, float y, float s) {
+  Squares(float x, float y, float s) {
     location.x = x;
     location.y = y;
     speed = s;
@@ -158,10 +170,15 @@ class Circles {
 }
 class Effects {
 
-  ArrayList<Circles> backCircles = new ArrayList<Circles>();
+  ArrayList<Squares> backSquares = new ArrayList<Squares>();
   ArrayList<CircleParticles> circleParticles = new ArrayList<CircleParticles>();
 
   int shakeTimer = 0;
+
+  PVector powerup = new PVector(-width, -height);
+  PVector velocity = new PVector(-width, -height);
+
+  int powerupTimer = 1000;
 
   public void particleCircles() {
     for (int i = circleParticles.size()-1; i >= 0; i--) {
@@ -188,9 +205,9 @@ class Effects {
 
     textSize(width/50);
     fill(0);
-    text("WASD - movement", width/2, height*.37f);
-    text("Arrow Keys - orb control", width/2, height*.41f);
-    text("Space - speed boost", width/2, height*.45f);
+    text("WASD - Movement", width/2, height*.37f);
+    text("Arrow Keys - Orb Control", width/2, height*.41f);
+    text("Space - Speed Boost", width/2, height*.45f);
 
     rectMode(CENTER);
     fill(0xfff44542);
@@ -206,7 +223,7 @@ class Effects {
 
     if (mousePressed && mouseX > width*.4f && mouseX < width*.6f && mouseY > height*.55f && mouseY < height*.65f) {
       nexus.play = true;
-      nexus.ai.difficulty = .65f;
+      nexus.ai.difficulty = .9f;
     } else if (mousePressed && mouseX > width*.4f && mouseX < width*.6f && mouseY > height*.65f && mouseY < height*.75f) {
       nexus.play = true;
       nexus.ai.difficulty = .5f;
@@ -218,17 +235,36 @@ class Effects {
 
   public void backgroundCircles() {
     if (frameCount % 60 == 0) {
-      backCircles.add(new Circles(random(width), random(height), width/200));
+      backSquares.add(new Squares(random(width), random(height), width/200));
     }
 
-    for (int i = backCircles.size()-1; i >= 0; i--) {
-      Circles c = backCircles.get(i);
+    for (int i = backSquares.size()-1; i >= 0; i--) {
+      Squares c = backSquares.get(i);
       c.grow();
       c.show();
       if (c.size> width*2) {
-        backCircles.remove(i);
+        backSquares.remove(i);
       }
     }
+  }
+
+  public void powerUp() {
+    if (powerupTimer < 0 && nexus.play == true) {
+      powerup.set(random(width*.2f, width*.8f), random(height*.2f, height*.8f));
+      powerupTimer = 1000;
+    }
+
+    if (powerup.x > 0) {
+      fill(0);
+      stroke(0xfff44542, 90);
+      ellipse(powerup.x, powerup.y, width/25, width/25);
+      velocity.y = (map(noise(nexus.ai.time + 30), 0, 1, -nexus.ai.moveSpeed, nexus.ai.moveSpeed));
+      velocity.x = (map(noise(nexus.ai.time + 100), 0, 1, -nexus.ai.moveSpeed, nexus.ai.moveSpeed));
+      powerup.add(velocity);
+      if (frameCount %2 == 0)
+        createCircle(powerup.x, powerup.y, 4);
+    }
+    powerupTimer--;
   }
 
   public void shakeScreen() {
@@ -245,22 +281,22 @@ class Effects {
 
       // Bcakground cricles
     case 1:
-      backCircles.add(new Circles(x, y, width/50));
+      backSquares.add(new Squares(x, y, width/50));
       break;
-
       // Ball trail circles
     case 2:
-      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), 0));
+      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), 0, 0));
       break;
-
       // Ball trail circles for AI
     case 3:
-      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), 0xfff44542));
+      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), 0xfff44542, 0));
+      break;
+    case 4:
+      circleParticles.add(new CircleParticles(x, y, random(-3, 3), random(-3, 3), random(0, 1), 0xfff44542, 1));
       break;
     }
   }
 }
-
 class Nexus {
   Player p1 = new Player();
   PlayerAI ai = new PlayerAI();
@@ -271,6 +307,7 @@ class Nexus {
     background(255);
     effects.shakeScreen();
     effects.backgroundCircles();
+    effects.powerUp();
     effects.particleCircles();
     if (play == false)
       effects.ui();
@@ -285,6 +322,7 @@ class Nexus {
     p1.move();
     p1.rotateOrbital();
     p1.collisions();
+    p1.powerUp();
     p1.showOrbitals();
     p1.show();
   }
@@ -294,6 +332,7 @@ class Nexus {
     ai.move();
     ai.rotateOrbital();
     ai.collisions();
+    ai.powerUp();
     ai.showOrbitals();
     ai.show();
   }
@@ -302,14 +341,17 @@ class Nexus {
     ai.hp = 30;
     ai.location.set(width*.25f, height/2);
     ai.size = width/25;
+    ai.boostCounter = 0;
+    
+    
     p1.hp = 30;
     p1.location.set(width*.75f, height/2);
     p1.size = width/25;
+    p1.boostCounter = 0;
     
     play = false;
   }
 }
-
 class Player {
   PVector location = new PVector(width*.75f, height/2);
   PVector velocity = new PVector(0, 0);
@@ -318,10 +360,12 @@ class Player {
   int collisionTimer = 10;
   int wallTimer = 10;
   int size = width/25;
-  int moveSpeed = width/800;
+  int moveSpeed = width/900;
   int orbDist = height/10;
   int hp = 30;
   float angle;
+  float rotationSpeed = PI/20;
+  int boostCounter = 0;
 
   PVector o1 = new PVector(width/2, height/2 + orbDist);
 
@@ -348,7 +392,7 @@ class Player {
       translate(0, 0);
       textSize(width/15);
       text("You Lose", width*.5f, height*.5f);
-      if(keyPressed){
+      if (keyPressed) {
         nexus.restart();
       }
     }
@@ -380,7 +424,7 @@ class Player {
       makeCircle();
     }
 
-    if (frameCount % 5 == 0 && abs(velocity.x) + abs(velocity.y) >= .01f){
+    if (frameCount % 5 == 0 && abs(velocity.x) + abs(velocity.y) >= .01f) {
       nexus.effects.createCircle(location.x, location.y, 2);
     }
 
@@ -404,6 +448,21 @@ class Player {
     dashTimer--;
     wallTimer--;
     collisionTimer--;
+  }
+
+  public void powerUp() {
+    if (dist(location.x, location.y, nexus.effects.powerup.x, nexus.effects.powerup.y) < size) {
+      nexus.effects.powerup.set(-width, -height);
+      rotationSpeed = PI/10;
+      boostCounter = 300;
+      size = width/18;
+    }
+
+    if (boostCounter <= 0 && hp > 0) {
+      rotationSpeed = PI/20;
+      size = width/25;
+    }
+    boostCounter--;
   }
 
   public void makeCircle() {
@@ -443,9 +502,9 @@ class Player {
   }
 
   public void collisions() {
-    if (dist(o1.x, o1.y, nexus.ai.location.x, nexus.ai.location.y) < size && collisionTimer < 0 && nexus.ai.collisionTimer <= 0) {
+    if (dist(o1.x, o1.y, nexus.ai.location.x, nexus.ai.location.y) < size && collisionTimer < 0 && hp > 0) {
       nexus.effects.shakeTimer = 15;
-      nexus.ai.additionalVelocity = nexus.ai.additionalVelocity.set((nexus.ai.location.x - location.x) * .1f, (nexus.ai.location.y - location.y) * .1f);
+      nexus.ai.additionalVelocity = nexus.ai.additionalVelocity.set((nexus.ai.location.x - o1.x) * 2, (nexus.ai.location.y - o1.y) * 2);
       nexus.ai.time += 30;
       collisionTimer = 30;
       nexus.ai.hp--;
@@ -467,16 +526,16 @@ class Player {
         velocity.y -= moveSpeed;
       }
       if (up == 1 && orbDist <= height/3.5f) {
-        orbDist += 6;
+        orbDist += width/100;
       }
       if (down == 1 && orbDist >= height/15) {
-        orbDist -= 6;
+        orbDist -= width/100;
       }
       if (right == 1) {
-        angle += PI/20;
+        angle += rotationSpeed;
       }
-      if (left == 1) {
-        angle -= PI/20;
+      if (left == 1 || boostCounter > 0) {
+        angle -= rotationSpeed;
       }
     }
 
@@ -499,11 +558,13 @@ class PlayerAI {
   float directionX = 1;
   float directionY = 1;
   int size = width/25;
-  int moveSpeed = width/800;
+  int moveSpeed = width/900;
   int orbDist = height/10;
   int collisionTimer = 10;
+  float rotationSpeed = PI/20;
   float angle;
   int hp = 30;
+  int boostCounter = 0;
   
   // From .3 - .65 (.3 being hardest)
   float difficulty = .65f;
@@ -536,17 +597,11 @@ class PlayerAI {
   public void move() {
     if (size > 0) {
       // moving
-      if (additionalVelocity.x + additionalVelocity.y == 0)
         location = location.add(velocity);
-      else
         location = location.add(additionalVelocity);
 
-      if (additionalVelocity.x > 0) {
-        additionalVelocity.x -= width/600;
-        additionalVelocity.y -= width/600;
-      } else {
-        additionalVelocity.set(0, 0);
-      }
+        additionalVelocity.mult(.7f);
+
 
 
       // Moving away from the walls.
@@ -613,9 +668,10 @@ class PlayerAI {
   }
 
   public void collisions() {
-    if (dist(o1.x, o1.y, nexus.p1.location.x, nexus.p1.location.y) < size && collisionTimer < 0) {
+    if (dist(o1.x, o1.y, nexus.p1.location.x, nexus.p1.location.y) < size && collisionTimer < 0 && hp > 0) {
       nexus.effects.shakeTimer = 15;
-      nexus.p1.velocity = nexus.p1.velocity.set((nexus.p1.location.x - location.x) * .2f, (nexus.p1.location.y - location.y) * .2f);
+      //nexus.p1.velocity = nexus.p1.velocity.set((nexus.p1.location.x - location.x) * .2, (nexus.p1.location.y - location.y) * .2);
+      nexus.p1.velocity = nexus.p1.velocity.add((nexus.p1.location.x - o1.x), (nexus.p1.location.y - o1.y));
       collisionTimer = 30;
       nexus.p1.hp--;
       text(hp, width*.9f, height*.1f);
@@ -647,12 +703,27 @@ class PlayerAI {
       line(location.x, location.y, o1.x, o1.y);
     }
   }
+  
+  public void powerUp() {
+    if (dist(location.x, location.y, nexus.effects.powerup.x, nexus.effects.powerup.y) < size) {
+      nexus.effects.powerup.set(-width, -height);
+      rotationSpeed = PI/10;
+      boostCounter = 300;
+      size = width/18;
+    }
+
+    if (boostCounter <= 0 && hp > 0) {
+      rotationSpeed = PI/20;
+      size = width/25;
+    }
+    boostCounter--;
+  }
 
   public void control() {
 
     // Movementas
 
-    if (noise(time + 300) < difficulty) {
+    if (noise(time + 300) < difficulty && collisionTimer < 0) {
       // Moving semi randomly
       velocity.y = directionY * (map(noise(time), 0, 1, -moveSpeed*10, moveSpeed*10));
       velocity.x = directionX * (map(noise(time + 20), 0, 1, -moveSpeed*10, moveSpeed*10));
@@ -667,15 +738,15 @@ class PlayerAI {
 
     // Rotation
     if (noise(time+100) < .3f || dist(location.x, location.y, nexus.p1.location.x, nexus.p1.location.y) < width/3)
-      angle += PI/20 * directionX * directionY;
+      angle += rotationSpeed * directionX * directionY;
 
     // Orb distance control
     if (orbDist < dist(location.x, location.y, nexus.p1.location.x, nexus.p1.location.y)) {
       if (orbDist <= height/3.5f)
-        orbDist += 6;
+        orbDist += width/100;
     } else {
       if (orbDist >= height/15)
-        orbDist -= 6;
+        orbDist -= width/100;
     }
 
 

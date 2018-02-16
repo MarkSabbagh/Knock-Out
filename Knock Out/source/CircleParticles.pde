@@ -7,14 +7,17 @@ class CircleParticles {
   float lifeSpan = 255;
   float rotation;
   color c;
+  boolean sqaure = true;
 
-  CircleParticles(float x, float y, float vx, float vy, float r, color c) {
+  CircleParticles(float x, float y, float vx, float vy, float r, color c, int shape) {
     location.x = x;
     location.y = y;
     velocity.x = vx;
     velocity.y = vy;
     rotation = r;
     this.c = c;
+    if (shape == 1)
+      sqaure = false;
   }
 
   void show() {
@@ -26,7 +29,15 @@ class CircleParticles {
     //ellipse(location.x, location.y, size/4, size/4);
     translate(location.x, location.y);
     rotate(rotation);
-    rect(0, 0, size/3, size/3);
+
+    if (sqaure) {
+      rect(0, 0, size/3, size/3);
+    } else {
+      noStroke();
+      ellipse(0, 0, size/3, size/3);
+
+    }
+
     popMatrix();
   }
 

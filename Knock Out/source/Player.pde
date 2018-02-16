@@ -6,10 +6,12 @@ class Player {
   int collisionTimer = 10;
   int wallTimer = 10;
   int size = width/25;
-  int moveSpeed = width/800;
+  int moveSpeed = width/900;
   int orbDist = height/10;
   int hp = 30;
   float angle;
+  float rotationSpeed = PI/20;
+  int boostCounter = 0;
 
   PVector o1 = new PVector(width/2, height/2 + orbDist);
 
@@ -36,7 +38,7 @@ class Player {
       translate(0, 0);
       textSize(width/15);
       text("You Lose", width*.5, height*.5);
-      if(keyPressed){
+      if (keyPressed) {
         nexus.restart();
       }
     }
@@ -68,7 +70,7 @@ class Player {
       makeCircle();
     }
 
-    if (frameCount % 5 == 0 && abs(velocity.x) + abs(velocity.y) >= .01){
+    if (frameCount % 5 == 0 && abs(velocity.x) + abs(velocity.y) >= .01) {
       nexus.effects.createCircle(location.x, location.y, 2);
     }
 
@@ -92,6 +94,21 @@ class Player {
     dashTimer--;
     wallTimer--;
     collisionTimer--;
+  }
+
+  void powerUp() {
+    if (dist(location.x, location.y, nexus.effects.powerup.x, nexus.effects.powerup.y) < size) {
+      nexus.effects.powerup.set(-width, -height);
+      rotationSpeed = PI/10;
+      boostCounter = 300;
+      size = width/18;
+    }
+
+    if (boostCounter <= 0 && hp > 0) {
+      rotationSpeed = PI/20;
+      size = width/25;
+    }
+    boostCounter--;
   }
 
   void makeCircle() {
@@ -131,9 +148,9 @@ class Player {
   }
 
   void collisions() {
-    if (dist(o1.x, o1.y, nexus.ai.location.x, nexus.ai.location.y) < size && collisionTimer < 0 && nexus.ai.collisionTimer <= 0) {
+    if (dist(o1.x, o1.y, nexus.ai.location.x, nexus.ai.location.y) < size && collisionTimer < 0 && hp > 0) {
       nexus.effects.shakeTimer = 15;
-      nexus.ai.additionalVelocity = nexus.ai.additionalVelocity.set((nexus.ai.location.x - location.x) * .1, (nexus.ai.location.y - location.y) * .1);
+      nexus.ai.additionalVelocity = nexus.ai.additionalVelocity.set((nexus.ai.location.x - o1.x) * 2, (nexus.ai.location.y - o1.y) * 2);
       nexus.ai.time += 30;
       collisionTimer = 30;
       nexus.ai.hp--;
@@ -155,16 +172,16 @@ class Player {
         velocity.y -= moveSpeed;
       }
       if (up == 1 && orbDist <= height/3.5) {
-        orbDist += 6;
+        orbDist += width/100;
       }
       if (down == 1 && orbDist >= height/15) {
-        orbDist -= 6;
+        orbDist -= width/100;
       }
       if (right == 1) {
-        angle += PI/20;
+        angle += rotationSpeed;
       }
-      if (left == 1) {
-        angle -= PI/20;
+      if (left == 1 || boostCounter > 0) {
+        angle -= rotationSpeed;
       }
     }
 

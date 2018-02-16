@@ -9,11 +9,13 @@ class PlayerAI {
   float directionX = 1;
   float directionY = 1;
   int size = width/25;
-  int moveSpeed = width/800;
+  int moveSpeed = width/900;
   int orbDist = height/10;
   int collisionTimer = 10;
+  float rotationSpeed = PI/20;
   float angle;
   int hp = 30;
+  int boostCounter = 0;
   
   // From .3 - .65 (.3 being hardest)
   float difficulty = .65;
@@ -46,17 +48,11 @@ class PlayerAI {
   void move() {
     if (size > 0) {
       // moving
-      if (additionalVelocity.x + additionalVelocity.y == 0)
         location = location.add(velocity);
-      else
         location = location.add(additionalVelocity);
 
-      if (additionalVelocity.x > 0) {
-        additionalVelocity.x -= width/600;
-        additionalVelocity.y -= width/600;
-      } else {
-        additionalVelocity.set(0, 0);
-      }
+        additionalVelocity.mult(.7);
+
 
 
       // Moving away from the walls.
@@ -123,9 +119,10 @@ class PlayerAI {
   }
 
   void collisions() {
-    if (dist(o1.x, o1.y, nexus.p1.location.x, nexus.p1.location.y) < size && collisionTimer < 0) {
+    if (dist(o1.x, o1.y, nexus.p1.location.x, nexus.p1.location.y) < size && collisionTimer < 0 && hp > 0) {
       nexus.effects.shakeTimer = 15;
-      nexus.p1.velocity = nexus.p1.velocity.set((nexus.p1.location.x - location.x) * .2, (nexus.p1.location.y - location.y) * .2);
+      //nexus.p1.velocity = nexus.p1.velocity.set((nexus.p1.location.x - location.x) * .2, (nexus.p1.location.y - location.y) * .2);
+      nexus.p1.velocity = nexus.p1.velocity.add((nexus.p1.location.x - o1.x), (nexus.p1.location.y - o1.y));
       collisionTimer = 30;
       nexus.p1.hp--;
       text(hp, width*.9, height*.1);
@@ -157,12 +154,27 @@ class PlayerAI {
       line(location.x, location.y, o1.x, o1.y);
     }
   }
+  
+  void powerUp() {
+    if (dist(location.x, location.y, nexus.effects.powerup.x, nexus.effects.powerup.y) < size) {
+      nexus.effects.powerup.set(-width, -height);
+      rotationSpeed = PI/10;
+      boostCounter = 300;
+      size = width/18;
+    }
+
+    if (boostCounter <= 0 && hp > 0) {
+      rotationSpeed = PI/20;
+      size = width/25;
+    }
+    boostCounter--;
+  }
 
   void control() {
 
     // Movementas
 
-    if (noise(time + 300) < difficulty) {
+    if (noise(time + 300) < difficulty && collisionTimer < 0) {
       // Moving semi randomly
       velocity.y = directionY * (map(noise(time), 0, 1, -moveSpeed*10, moveSpeed*10));
       velocity.x = directionX * (map(noise(time + 20), 0, 1, -moveSpeed*10, moveSpeed*10));
@@ -177,15 +189,15 @@ class PlayerAI {
 
     // Rotation
     if (noise(time+100) < .3 || dist(location.x, location.y, nexus.p1.location.x, nexus.p1.location.y) < width/3)
-      angle += PI/20 * directionX * directionY;
+      angle += rotationSpeed * directionX * directionY;
 
     // Orb distance control
     if (orbDist < dist(location.x, location.y, nexus.p1.location.x, nexus.p1.location.y)) {
       if (orbDist <= height/3.5)
-        orbDist += 6;
+        orbDist += width/100;
     } else {
       if (orbDist >= height/15)
-        orbDist -= 6;
+        orbDist -= width/100;
     }
 
 

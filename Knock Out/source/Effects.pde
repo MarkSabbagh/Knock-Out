@@ -1,9 +1,14 @@
 class Effects {
 
-  ArrayList<Circles> backCircles = new ArrayList<Circles>();
+  ArrayList<Squares> backSquares = new ArrayList<Squares>();
   ArrayList<CircleParticles> circleParticles = new ArrayList<CircleParticles>();
 
   int shakeTimer = 0;
+
+  PVector powerup = new PVector(-width, -height);
+  PVector velocity = new PVector(-width, -height);
+
+  int powerupTimer = 1000;
 
   void particleCircles() {
     for (int i = circleParticles.size()-1; i >= 0; i--) {
@@ -30,9 +35,9 @@ class Effects {
 
     textSize(width/50);
     fill(0);
-    text("WASD - movement", width/2, height*.37);
-    text("Arrow Keys - orb control", width/2, height*.41);
-    text("Space - speed boost", width/2, height*.45);
+    text("WASD - Movement", width/2, height*.37);
+    text("Arrow Keys - Orb Control", width/2, height*.41);
+    text("Space - Speed Boost", width/2, height*.45);
 
     rectMode(CENTER);
     fill(#f44542);
@@ -48,7 +53,7 @@ class Effects {
 
     if (mousePressed && mouseX > width*.4 && mouseX < width*.6 && mouseY > height*.55 && mouseY < height*.65) {
       nexus.play = true;
-      nexus.ai.difficulty = .65;
+      nexus.ai.difficulty = .9;
     } else if (mousePressed && mouseX > width*.4 && mouseX < width*.6 && mouseY > height*.65 && mouseY < height*.75) {
       nexus.play = true;
       nexus.ai.difficulty = .5;
@@ -60,17 +65,36 @@ class Effects {
 
   void backgroundCircles() {
     if (frameCount % 60 == 0) {
-      backCircles.add(new Circles(random(width), random(height), width/200));
+      backSquares.add(new Squares(random(width), random(height), width/200));
     }
 
-    for (int i = backCircles.size()-1; i >= 0; i--) {
-      Circles c = backCircles.get(i);
+    for (int i = backSquares.size()-1; i >= 0; i--) {
+      Squares c = backSquares.get(i);
       c.grow();
       c.show();
       if (c.size> width*2) {
-        backCircles.remove(i);
+        backSquares.remove(i);
       }
     }
+  }
+
+  void powerUp() {
+    if (powerupTimer < 0 && nexus.play == true) {
+      powerup.set(random(width*.2, width*.8), random(height*.2, height*.8));
+      powerupTimer = 1000;
+    }
+
+    if (powerup.x > 0) {
+      fill(0);
+      stroke(#f44542, 90);
+      ellipse(powerup.x, powerup.y, width/25, width/25);
+      velocity.y = (map(noise(nexus.ai.time + 30), 0, 1, -nexus.ai.moveSpeed, nexus.ai.moveSpeed));
+      velocity.x = (map(noise(nexus.ai.time + 100), 0, 1, -nexus.ai.moveSpeed, nexus.ai.moveSpeed));
+      powerup.add(velocity);
+      if (frameCount %2 == 0)
+        createCircle(powerup.x, powerup.y, 4);
+    }
+    powerupTimer--;
   }
 
   void shakeScreen() {
@@ -87,17 +111,18 @@ class Effects {
 
       // Bcakground cricles
     case 1:
-      backCircles.add(new Circles(x, y, width/50));
+      backSquares.add(new Squares(x, y, width/50));
       break;
-
       // Ball trail circles
     case 2:
-      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), 0));
+      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), 0, 0));
       break;
-
       // Ball trail circles for AI
     case 3:
-      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), #f44542));
+      circleParticles.add(new CircleParticles(x, y, random(-5, 5), random(-5, 5), random(0, 1), #f44542, 0));
+      break;
+    case 4:
+      circleParticles.add(new CircleParticles(x, y, random(-3, 3), random(-3, 3), random(0, 1), #f44542, 1));
       break;
     }
   }
